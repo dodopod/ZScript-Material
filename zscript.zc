@@ -1,0 +1,185 @@
+version "3.7"
+
+class MaterialHandler : EventHandler
+{
+    String materialName;
+    Array<String> textures; // Array<TextureId> doesn't work
+
+    int health;
+
+    Array<String> damageTypes;
+    Array<double> damageFactors;
+
+    Array<Line> lines;
+    Array<Sector> floorSectors;
+
+
+    override void WorldLoaded(WorldEvent e)
+    {
+        if (e.isReopen) return;
+
+        for (int i = 0; i < level.lines.Size(); ++i)
+        {
+            Line l = level.lines[i];
+            if (LineHasMaterial(l))
+            {
+                lines.Push(l);
+                MatLineLoaded(l);
+            }
+        }
+
+        for (int i = 0; i < level.sectors.Size(); ++i)
+        {
+            Sector s = level.sectors[i];
+            if (FloorHasMaterial(s))
+            {
+                floorSectors.Push(s);
+                MatFloorLoaded(s);
+            }   // TODO ceiling & 3d
+        }
+    }
+
+    override void WorldLineDamaged(WorldEvent e)
+    {
+        if (LineHasMaterial(e.damageLine))
+        {
+            MatLineDamaged(e);
+
+            if (e.damageLine.health - e.newDamage <= 0) MatLineDestroyed(e);
+        }
+    }
+
+    override void WorldSectorDamaged(WorldEvent e) {}   // TODO
+
+    override void WorldTick()
+    {
+        for (int i = 0; i < lines.Size(); ++i)
+        {
+            MatLineTick(lines[i]);
+        }   // TODO floor, ceiling, 3d
+    }
+
+
+    virtual void MatLineLoaded(Line l)
+    {
+        l.SetHealth(health);
+
+        Console.Printf(
+            "Material assigned\n"
+            "  Line #: %d\n"
+            "  Material: %s\n",
+            l.Index(),
+            materialName);
+    }
+
+    virtual void MatLineDamaged(WorldEvent e)
+    {
+        e.newDamage = ApplyDamageFactor(e.damageType, e.damage);
+
+        Console.Printf(
+            "Line damaged\n"
+            "  Line #: %d\n"
+            "  Material: %s\n"
+            "  Damage type: %s\n"
+            "  Base damage: %d\n"
+            "  Modified damage: %d\n"
+            "  Remaining HP: %d",
+            e.damageLine.Index(),
+            materialName,
+            e.damageType,
+            e.damage,
+            e.newDamage,
+            e.damageLine.health - e.newDamage);
+    }
+
+    virtual void MatLineDestroyed(WorldEvent e)
+    {
+        if (e.damageLine.flags & Line.ML_TwoSided)
+        {
+            e.damageLine.flags &=
+                ~(Line.ML_Blocking
+                | Line.ML_BlockMonsters
+                | Line.ML_Block_Players
+                | Line.ML_BlockEverything
+                | Line.ML_BlockProjectile
+                | Line.ML_BlockUse
+                | Line.ML_BlockSight
+                | Line.ML_BlockHitscan
+                | Line.ML_3dMidTex_Impass);
+
+            Console.Printf(
+                "Line destroyed\n"
+                "  Line #: %d\n",
+                e.damageLine.Index());
+        }
+    }
+
+    virtual void MatLineTick(Line l) {}
+
+
+    virtual void MatFloorLoaded(Sector s) {}    // TODO
+
+
+    bool LineHasMaterial(Line l)
+    {
+        // UDMF property
+        if (l.GetUdmfString('user_material') ~== materialName && materialName != "")
+            return true;
+
+        // Front mid texture
+        String tex = TexMan.GetName(l.sidedef[0].GetTexture(Side.mid));
+        if (textures.Find(tex) < textures.Size()) return true;
+
+        // Back mid texture
+        if (l.flags & Line.ML_TwoSided)
+        {
+            tex = TexMan.GetName(l.sidedef[1].GetTexture(Side.mid));
+            if (textures.Find(tex) < textures.Size()) return true;
+        }
+
+        return false;
+    }
+
+    bool FloorHasMaterial(Sector s)
+    {
+        // UDMF property
+        if (s.GetUdmfString('user_materialfloor') ~== materialName && materialName != "")
+
+        // Floor flat - TODO
+    }
+
+
+    void AddDamageFactor(String type, double factor)
+    {
+        type.ToLower();
+        damageTypes.Push(type);
+        damageFactors.Push(factor);
+    }
+
+    int ApplyDamageFactor(String type, int damage)
+    {
+        type.ToLower();
+        int i = damageTypes.Find(type);
+        return i < damageTypes.Size() ? damageFactors[i] * damage : damage;
+    }
+}
+
+
+class ForceFieldHandler : MaterialHandler
+{
+    override void OnRegister()
+    {
+        materialName = "ForceField";
+        textures.Push("FIREBLU1");
+        health = 100;
+        AddDamageFactor("Hitscan", 0);
+    }
+
+    override void MatLineDamaged(WorldEvent e)
+    {
+        Super.MatLineDamaged(e);
+
+        double newHealth = e.damageLine.health - e.newDamage;
+        e.damageLine.alpha = Clamp(newHealth / health, 0, 1);
+    }
+}
