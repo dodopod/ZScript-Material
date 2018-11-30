@@ -180,13 +180,19 @@ class MaterialHandler : EventHandler
 
         // Front mid texture
         String tex = TexMan.GetName(l.sidedef[0].GetTexture(Side.mid));
-        if (textures.Find(tex) < textures.Size()) return true;
+        for (int i = 0; i < textures.Size(); ++i)
+        {
+            if (textures[i] ~== tex) return true;
+        }
 
         // Back mid texture
         if (l.flags & Line.ML_TwoSided)
         {
             tex = TexMan.GetName(l.sidedef[1].GetTexture(Side.mid));
-            if (textures.Find(tex) < textures.Size()) return true;
+            for (int i = 0; i < textures.Size(); ++i)
+            {
+                if (textures[i] ~== tex) return true;
+            }
         }
 
         return false;
@@ -199,7 +205,10 @@ class MaterialHandler : EventHandler
 
         // Floor flat
         String tex = TexMan.GetName(s.GetTexture(Sector.floor));
-        if (textures.Find(tex) < textures.Size()) return true;
+        for (int i = 0; i < textures.Size(); ++i)
+        {
+            if (textures[i] ~== tex) return true;
+        }
 
         return false;
     }
@@ -207,16 +216,18 @@ class MaterialHandler : EventHandler
 
     void AddDamageFactor(String type, double factor)
     {
-        type.ToLower();
         damageTypes.Push(type);
         damageFactors.Push(factor);
     }
 
     int ApplyDamageFactor(String type, int damage)
     {
-        type.ToLower();
-        int i = damageTypes.Find(type);
-        return i < damageTypes.Size() ? damageFactors[i] * damage : damage;
+        for (int i = 0; i < damageTypes.Size(); ++i)
+        {
+            if (damageTypes[i] ~== type) return damageFactors[i] * damage;
+        }
+
+        return damage;
     }
 }
 
@@ -226,7 +237,7 @@ class ForceFieldHandler : MaterialHandler
     override void OnRegister()
     {
         materialName = "ForceField";
-        textures.Push("FIREBLU1");
+        textures.Push("fireblu1");
         health = 100;
         AddDamageFactor("Hitscan", 0);
     }
@@ -256,7 +267,7 @@ class WoodHandler : MaterialHandler
     override void OnRegister()
     {
         materialName = "Wood";
-        textures.Push("FLAT5_2");
+        textures.Push("flat5_2");
         health = 20;
     }
 }
