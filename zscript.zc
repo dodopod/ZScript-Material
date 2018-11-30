@@ -49,13 +49,26 @@ class MaterialHandler : EventHandler
         }
     }
 
-    override void WorldSectorDamaged(WorldEvent e) {}   // TODO
+    override void WorldSectorDamaged(WorldEvent e)
+    {
+        if (e.damageSectorPart == SECPART_Floor && FloorHasMaterial(e.damageSector))
+        {
+            MatFloorDamaged(e);
+
+            if (e.damageSector.healthFloor - e.newDamage <= 0) MatFloorDestroyed(e);
+        }
+    }
 
     override void WorldTick()
     {
         for (int i = 0; i < lines.Size(); ++i)
         {
             MatLineTick(lines[i]);
+        }
+
+        for (int i = 0; i < floorSectors.Size(); ++i)
+        {
+            MatFloorTick(floorSectors[i]);
         }   // TODO floor, ceiling, 3d
     }
 
@@ -65,7 +78,7 @@ class MaterialHandler : EventHandler
         l.SetHealth(health);
 
         Console.Printf(
-            "Material assigned\n"
+            "Line material assigned\n"
             "  Line #: %d\n"
             "  Material: %s\n",
             l.Index(),
@@ -83,7 +96,7 @@ class MaterialHandler : EventHandler
             "  Damage type: %s\n"
             "  Base damage: %d\n"
             "  Modified damage: %d\n"
-            "  Remaining HP: %d",
+            "  Remaining HP: %d\n",
             e.damageLine.Index(),
             materialName,
             e.damageType,
@@ -117,14 +130,53 @@ class MaterialHandler : EventHandler
     virtual void MatLineTick(Line l) {}
 
 
-    virtual void MatFloorLoaded(Sector s) {}    // TODO
+    virtual void MatFloorLoaded(Sector s)
+    {
+        s.SetHealth(SECPART_Floor, health);
+
+        Console.Printf(
+            "Floor material assigned\n"
+            "  Sector #: %d\n"
+            "  Material: %s\n",
+            s.Index(),
+            materialName);
+    }
+
+    virtual void MatFloorDamaged(WorldEvent e)
+    {
+        e.newDamage = ApplyDamageFactor(e.damageType, e.damage);
+
+        Console.Printf(
+            "Floor damaged\n"
+            "  Sector #: %d\n"
+            "  Material: %s\n"
+            "  Damage type: %s\n"
+            "  Base damage: %d\n"
+            "  Modified damage: %d\n"
+            "  Remaining HP: %d\n",
+            e.damageSector.Index(),
+            materialName,
+            e.damageType,
+            e.damage,
+            e.newDamage,
+            e.damageSector.healthFloor - e.newDamage);
+    }
+
+    virtual void MatFloorDestroyed(WorldEvent e)
+    {
+        Console.Printf(
+            "Floor destroyed\n"
+            "  Sector #: %d\n",
+            e.damageSector.Index());
+    }
+
+    virtual void MatFloorTick(Sector s) {}
 
 
     bool LineHasMaterial(Line l)
     {
         // UDMF property
-        if (l.GetUdmfString('user_material') ~== materialName && materialName != "")
-            return true;
+        if (l.GetUdmfString('user_material') ~== materialName && materialName != "") return true;
 
         // Front mid texture
         String tex = TexMan.GetName(l.sidedef[0].GetTexture(Side.mid));
@@ -143,9 +195,11 @@ class MaterialHandler : EventHandler
     bool FloorHasMaterial(Sector s)
     {
         // UDMF property
-        if (s.GetUdmfString('user_materialfloor') ~== materialName && materialName != "")
+        if (s.GetUdmfString('user_materialfloor') ~== materialName && materialName != "") return true;
 
         // Floor flat - TODO
+
+        return false;
     }
 
 
@@ -175,11 +229,25 @@ class ForceFieldHandler : MaterialHandler
         AddDamageFactor("Hitscan", 0);
     }
 
-    override void MatLineDamaged(WorldEvent e)
+    override void MatLineTick(Line l)
     {
-        Super.MatLineDamaged(e);
+        if (gameTic % 4 == 0 && l.health < health)
+        {
+            l.SetHealth(l.health + 1);
 
-        double newHealth = e.damageLine.health - e.newDamage;
-        e.damageLine.alpha = Clamp(newHealth / health, 0, 1);
+            Console.Printf("Force field HP: %d", l.health);
+        }
+
+        l.alpha = Clamp(double(l.health) / health, 0, 1);
+    }
+}
+
+
+class WoodHandler : MaterialHandler
+{
+    override void OnRegister()
+    {
+        materialName = "Wood";
+        health = 20;
     }
 }

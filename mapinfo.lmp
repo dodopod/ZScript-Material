@@ -1,4 +1,4 @@
 GameInfo
 {
-    AddEventHandlers = "ForceFieldHandler"
+    AddEventHandlers = "ForceFieldHandler", "WoodHandler"
 }
