@@ -197,7 +197,9 @@ class MaterialHandler : EventHandler
         // UDMF property
         if (s.GetUdmfString('user_materialfloor') ~== materialName && materialName != "") return true;
 
-        // Floor flat - TODO
+        // Floor flat
+        String tex = TexMan.GetName(s.GetTexture(Sector.floor));
+        if (textures.Find(tex) < textures.Size()) return true;
 
         return false;
     }
@@ -254,6 +256,7 @@ class WoodHandler : MaterialHandler
     override void OnRegister()
     {
         materialName = "Wood";
+        textures.Push("FLAT5_2");
         health = 20;
     }
 }
