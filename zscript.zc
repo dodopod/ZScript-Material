@@ -63,13 +63,13 @@ class MaterialHandler : EventHandler
     {
         for (int i = 0; i < lines.Size(); ++i)
         {
-            MatLineTick(lines[i]);
+            if (lines[i].health > 0) MatLineTick(lines[i]);
         }
 
         for (int i = 0; i < floorSectors.Size(); ++i)
         {
-            MatFloorTick(floorSectors[i]);
-        }   // TODO floor, ceiling, 3d
+            if (floorSectors[i].healthFloor > 0) MatFloorTick(floorSectors[i]);
+        }   // TODO ceiling, 3d
     }
 
 
@@ -80,7 +80,7 @@ class MaterialHandler : EventHandler
         Console.Printf(
             "Line material assigned\n"
             "  Line #: %d\n"
-            "  Material: %s\n",
+            "  Material: %s",
             l.Index(),
             materialName);
     }
@@ -96,7 +96,7 @@ class MaterialHandler : EventHandler
             "  Damage type: %s\n"
             "  Base damage: %d\n"
             "  Modified damage: %d\n"
-            "  Remaining HP: %d\n",
+            "  Remaining HP: %d",
             e.damageLine.Index(),
             materialName,
             e.damageType,
@@ -122,7 +122,7 @@ class MaterialHandler : EventHandler
 
             Console.Printf(
                 "Line destroyed\n"
-                "  Line #: %d\n",
+                "  Line #: %d",
                 e.damageLine.Index());
         }
     }
@@ -137,7 +137,7 @@ class MaterialHandler : EventHandler
         Console.Printf(
             "Floor material assigned\n"
             "  Sector #: %d\n"
-            "  Material: %s\n",
+            "  Material: %s",
             s.Index(),
             materialName);
     }
@@ -153,7 +153,7 @@ class MaterialHandler : EventHandler
             "  Damage type: %s\n"
             "  Base damage: %d\n"
             "  Modified damage: %d\n"
-            "  Remaining HP: %d\n",
+            "  Remaining HP: %d",
             e.damageSector.Index(),
             materialName,
             e.damageType,
@@ -166,7 +166,7 @@ class MaterialHandler : EventHandler
     {
         Console.Printf(
             "Floor destroyed\n"
-            "  Sector #: %d\n",
+            "  Sector #: %d",
             e.damageSector.Index());
     }
 
@@ -227,6 +227,12 @@ class ForceFieldHandler : MaterialHandler
         textures.Push("FIREBLU1");
         health = 100;
         AddDamageFactor("Hitscan", 0);
+    }
+
+    override void MatLineDestroyed(WorldEvent e)
+    {
+        Super.MatLineDestroyed(e);
+        e.damageLine.alpha = 0;
     }
 
     override void MatLineTick(Line l)
