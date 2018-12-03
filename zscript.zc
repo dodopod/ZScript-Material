@@ -2,6 +2,12 @@ version "3.7"
 
 class MaterialHandler : EventHandler
 {
+    const set3dFloorSpecial = 160;
+    const lineMaterialProp = "user_material";
+    const floorMaterialProp = "user_materialfloor";
+    const ceilingMaterialProp = "user_materialceiling";
+    const floor3dMaterialProp = "user_material3d";
+
     String materialName;
     Array<String> textures; // Array<TextureId> doesn't work
 
@@ -11,7 +17,9 @@ class MaterialHandler : EventHandler
     Array<double> damageFactors;
 
     Array<Line> lines;
-    Array<Sector> floorSectors;
+    Array<Sector> sectorsFloor;
+    Array<Sector> sectorsCeiling;
+    Array<Sector> sectors3d;
 
 
     override void WorldLoaded(WorldEvent e)
@@ -21,41 +29,47 @@ class MaterialHandler : EventHandler
         for (int i = 0; i < level.lines.Size(); ++i)
         {
             Line l = level.lines[i];
-            if (LineHasMaterial(l))
-            {
-                lines.Push(l);
-                MatLineLoaded(l);
-            }
+            if (HasMaterialLine(l)) MaterialLineInit(l);
         }
 
         for (int i = 0; i < level.sectors.Size(); ++i)
         {
             Sector s = level.sectors[i];
-            if (FloorHasMaterial(s))
-            {
-                floorSectors.Push(s);
-                MatFloorLoaded(s);
-            }   // TODO ceiling & 3d
+            if (HasMaterialFloor(s)) MaterialFloorInit(s);
+            if (HasMaterialCeiling(s)) MaterialCeilingInit(s);
+            if (HasMaterial3d(s)) Material3dInit(s);
         }
     }
 
     override void WorldLineDamaged(WorldEvent e)
     {
-        if (LineHasMaterial(e.damageLine))
+        if (HasMaterialLine(e.damageLine))
         {
-            MatLineDamaged(e);
+            MaterialLineDamaged(e);
 
-            if (e.damageLine.health - e.newDamage <= 0) MatLineDestroyed(e);
+            if (e.damageLine.health - e.newDamage <= 0) MaterialLineDestroyed(e);
         }
     }
 
     override void WorldSectorDamaged(WorldEvent e)
     {
-        if (e.damageSectorPart == SECPART_Floor && FloorHasMaterial(e.damageSector))
+        if (e.damageSectorPart == SECPART_Floor && HasMaterialFloor(e.damageSector))
         {
-            MatFloorDamaged(e);
+            MaterialFloorDamaged(e);
 
-            if (e.damageSector.healthFloor - e.newDamage <= 0) MatFloorDestroyed(e);
+            if (e.damageSector.healthFloor - e.newDamage <= 0) MaterialFloorDestroyed(e);
+        }
+        else if (e.damageSectorPart == SECPART_Ceiling && HasMaterialCeiling(e.damageSector))
+        {
+            MaterialCeilingDamaged(e);
+
+            if (e.damageSector.healthCeiling - e.newDamage <= 0) MaterialCeilingDestroyed(e);
+        }
+        else if (e.damageSectorPart == SECPART_3d && HasMaterial3d(e.damageSector))
+        {
+            Material3dDamaged(e);
+
+            if (e.damageSector.GetHealth(SECPART_3d) - e.newDamage <= 0) Material3dDestroyed(e);
         }
     }
 
@@ -63,33 +77,44 @@ class MaterialHandler : EventHandler
     {
         for (int i = 0; i < lines.Size(); ++i)
         {
-            if (lines[i].health > 0) MatLineTick(lines[i]);
+            if (lines[i].health > 0) MaterialLineTick(lines[i]);
         }
 
-        for (int i = 0; i < floorSectors.Size(); ++i)
+        for (int i = 0; i < sectorsFloor.Size(); ++i)
         {
-            if (floorSectors[i].healthFloor > 0) MatFloorTick(floorSectors[i]);
-        }   // TODO ceiling, 3d
+            if (sectorsFloor[i].healthFloor > 0) MaterialFloorTick(sectorsFloor[i]);
+        }
+
+        for (int i = 0; i < sectorsCeiling.Size(); ++i)
+        {
+            if (sectorsCeiling[i].healthCeiling > 0) MaterialCeilingTick(sectorsCeiling[i]);
+        }
+
+        for (int i = 0; i < sectors3d.Size(); ++i)
+        {
+            if (sectors3d[i].GetHealth(SECPART_3d) > 0) Material3dTick(sectors3d[i]);
+        }
     }
 
 
-    virtual void MatLineLoaded(Line l)
+    virtual void MaterialLineInit(Line l)
     {
+        lines.Push(l);
         l.SetHealth(health);
 
-        Console.Printf(
+        /*Console.Printf(
             "Line material assigned\n"
             "  Line #: %d\n"
             "  Material: %s",
             l.Index(),
-            materialName);
+            materialName);*/
     }
 
-    virtual void MatLineDamaged(WorldEvent e)
+    virtual void MaterialLineDamaged(WorldEvent e)
     {
         e.newDamage = ApplyDamageFactor(e.damageType, e.damage);
 
-        Console.Printf(
+        /*Console.Printf(
             "Line damaged\n"
             "  Line #: %d\n"
             "  Material: %s\n"
@@ -102,10 +127,10 @@ class MaterialHandler : EventHandler
             e.damageType,
             e.damage,
             e.newDamage,
-            e.damageLine.health - e.newDamage);
+            e.damageLine.health - e.newDamage);*/
     }
 
-    virtual void MatLineDestroyed(WorldEvent e)
+    virtual void MaterialLineDestroyed(WorldEvent e)
     {
         if (e.damageLine.flags & Line.ML_TwoSided)
         {
@@ -120,33 +145,34 @@ class MaterialHandler : EventHandler
                 | Line.ML_BlockHitscan
                 | Line.ML_3dMidTex_Impass);
 
-            Console.Printf(
+            /*Console.Printf(
                 "Line destroyed\n"
                 "  Line #: %d",
-                e.damageLine.Index());
+                e.damageLine.Index());*/
         }
     }
 
-    virtual void MatLineTick(Line l) {}
+    virtual void MaterialLineTick(Line l) {}
 
 
-    virtual void MatFloorLoaded(Sector s)
+    virtual void MaterialFloorInit(Sector s)
     {
+        sectorsFloor.Push(s);
         s.SetHealth(SECPART_Floor, health);
 
-        Console.Printf(
+        /*Console.Printf(
             "Floor material assigned\n"
             "  Sector #: %d\n"
             "  Material: %s",
             s.Index(),
-            materialName);
+            materialName);*/
     }
 
-    virtual void MatFloorDamaged(WorldEvent e)
+    virtual void MaterialFloorDamaged(WorldEvent e)
     {
         e.newDamage = ApplyDamageFactor(e.damageType, e.damage);
 
-        Console.Printf(
+        /*Console.Printf(
             "Floor damaged\n"
             "  Sector #: %d\n"
             "  Material: %s\n"
@@ -159,21 +185,111 @@ class MaterialHandler : EventHandler
             e.damageType,
             e.damage,
             e.newDamage,
-            e.damageSector.healthFloor - e.newDamage);
+            e.damageSector.healthFloor - e.newDamage);*/
     }
 
-    virtual void MatFloorDestroyed(WorldEvent e)
+    virtual void MaterialFloorDestroyed(WorldEvent e)
     {
-        Console.Printf(
+        /*Console.Printf(
             "Floor destroyed\n"
             "  Sector #: %d",
-            e.damageSector.Index());
+            e.damageSector.Index());*/
     }
 
-    virtual void MatFloorTick(Sector s) {}
+    virtual void MaterialFloorTick(Sector s) {}
 
 
-    bool LineHasMaterial(Line l)
+    virtual void MaterialCeilingInit(Sector s)
+    {
+        sectorsCeiling.Push(s);
+        s.SetHealth(SECPART_Ceiling, health);
+
+        /*Console.Printf(
+            "Ceiling material assigned\n"
+            "  Sector #: %d\n"
+            "  Material: %s",
+            s.Index(),
+            materialName);*/
+    }
+
+    virtual void MaterialCeilingDamaged(WorldEvent e)
+    {
+
+        e.newDamage = ApplyDamageFactor(e.damageType, e.damage);
+
+        /*Console.Printf(
+            "Ceiling damaged\n"
+            "  Sector #: %d\n"
+            "  Material: %s\n"
+            "  Damage type: %s\n"
+            "  Base damage: %d\n"
+            "  Modified damage: %d\n"
+            "  Remaining HP: %d",
+            e.damageSector.Index(),
+            materialName,
+            e.damageType,
+            e.damage,
+            e.newDamage,
+            e.damageSector.healthCeiling - e.newDamage);*/
+    }
+
+    virtual void MaterialCeilingDestroyed(WorldEvent e)
+    {
+        /*Console.Printf(
+            "Ceiling destroyed\n"
+            "  Sector #: %d",
+            e.damageSector.Index());*/
+    }
+
+    virtual void MaterialCeilingTick(Sector s) {}
+
+
+    virtual void Material3dInit(Sector s)
+    {
+        sectors3d.Push(s);
+        s.SetHealth(SECPART_3d, health);
+
+        /*Console.Printf(
+            "3d floor material assigned\n"
+            "  Sector #: %d\n"
+            "  Material: %s",
+            s.Index(),
+            materialName);*/
+    }
+
+    virtual void Material3dDamaged(WorldEvent e)
+    {
+
+        e.newDamage = ApplyDamageFactor(e.damageType, e.damage);
+
+        /*Console.Printf(
+            "3d floor damaged\n"
+            "  Sector #: %d\n"
+            "  Material: %s\n"
+            "  Damage type: %s\n"
+            "  Base damage: %d\n"
+            "  Modified damage: %d\n"
+            "  Remaining HP: %d",
+            e.damageSector.Index(),
+            materialName,
+            e.damageType,
+            e.damage,
+            e.newDamage,
+            e.damageSector.GetHealth(SECPART_3d) - e.newDamage);*/
+    }
+
+    virtual void Material3dDestroyed(WorldEvent e)
+    {
+        /*Console.Printf(
+            "3d floor destroyed\n"
+            "  Sector #: %d",
+            e.damageSector.Index());*/
+    }
+
+    virtual void Material3dTick(Sector s) {}
+
+
+    bool HasMaterialLine(Line l)
     {
         // UDMF property
         if (l.GetUdmfString('user_material') ~== materialName && materialName != "") return true;
@@ -198,7 +314,7 @@ class MaterialHandler : EventHandler
         return false;
     }
 
-    bool FloorHasMaterial(Sector s)
+    bool HasMaterialFloor(Sector s)
     {
         // UDMF property
         if (s.GetUdmfString('user_materialfloor') ~== materialName && materialName != "") return true;
@@ -209,6 +325,31 @@ class MaterialHandler : EventHandler
         {
             if (textures[i] ~== tex) return true;
         }
+
+        return false;
+    }
+
+    bool HasMaterialCeiling(Sector s)
+    {
+        // UDMF property
+        if (s.GetUdmfString('user_materialceiling') ~== materialName && materialName != "") return true;
+
+        // Ceiling flat
+        String tex = TexMan.GetName(s.GetTexture(Sector.ceiling));
+        for (int i = 0; i < textures.Size(); ++i)
+        {
+            if (textures[i] ~== tex) return true;
+        }
+
+        return false;
+    }
+
+    bool HasMaterial3d(Sector s)
+    {
+        // UDMF property
+        if (s.GetUdmfString('user_material3d') ~== materialName && materialName != "") return true;
+
+        // TODO textures
 
         return false;
     }
@@ -237,18 +378,18 @@ class ForceFieldHandler : MaterialHandler
     override void OnRegister()
     {
         materialName = "ForceField";
-        textures.Push("fireblu1");
+        textures.Push("FIREBLU1");
         health = 100;
         AddDamageFactor("Hitscan", 0);
     }
 
-    override void MatLineDestroyed(WorldEvent e)
+    override void MaterialLineDestroyed(WorldEvent e)
     {
-        Super.MatLineDestroyed(e);
+        Super.MaterialLineDestroyed(e);
         e.damageLine.alpha = 0;
     }
 
-    override void MatLineTick(Line l)
+    override void MaterialLineTick(Line l)
     {
         if (gameTic % 4 == 0 && l.health < health)
         {
@@ -262,12 +403,84 @@ class ForceFieldHandler : MaterialHandler
 }
 
 
+class DirtHandler : MaterialHandler
+{
+    override void OnRegister()
+    {
+        materialName = "Dirt";
+        textures.Push("FLAT10");
+        textures.Push("GRASS1");
+        health = 20;
+    }
+
+    override void MaterialFloorDestroyed(WorldEvent e)
+    {
+        e.damageSector.SetTexture(Sector.Floor, TexMan.CheckForTexture("FLAT10", TexMan.TYPE_Any));
+
+        int excess = e.newDamage - e.damageSector.healthFloor;
+        e.damageSector.SetHealth(SECPART_Floor, health);
+        e.newDamage = excess % health;
+
+        int floorHeight = e.damageSector.floorPlane.ZAtPoint(e.damageSector.centerSpot);
+        int newHeight = 8 * (1 + excess / health) - floorHeight;
+        e.damageSector.MoveFloor(1, newHeight, 0, 1, false, true);
+    }
+}
+
+class CeilingLampHandler : MaterialHandler
+{
+    Array<Actor> lights;   // Indices line up w/ sectorsCeiling
+
+    override void OnRegister()
+    {
+        materialName = "CeilingLamp";
+        textures.Push("CEIL1_2");
+        health = 10;
+    }
+
+    override void MaterialCeilingInit(Sector s)
+    {
+        Super.MaterialCeilingInit(s);
+
+        Vector3 center;
+        center.xy = s.centerspot;
+        center.z = s.ceilingPlane.ZAtPoint(center.xy);
+
+        let light = Actor.Spawn("PointLight", center);
+        light.args[0] = 255; // r
+        light.args[1] = 255; // g
+        light.args[2] = 255; // b
+        light.args[3] = 256; // radius
+
+        lights.Push(light);
+    }
+
+    override void MaterialCeilingDestroyed(WorldEvent e)
+    {
+        Super.MaterialCeilingDestroyed(e);
+        int i = sectorsCeiling.Find(e.damageSector);
+
+        if (i < sectorsCeiling.Size())
+        {
+            lights[i].Destroy();
+            lights[i] = null;
+        }
+    }
+}
+
 class WoodHandler : MaterialHandler
 {
     override void OnRegister()
     {
         materialName = "Wood";
-        textures.Push("flat5_2");
-        health = 20;
+        health = 50;
+    }
+
+    override void Material3dDestroyed(WorldEvent e)
+    {
+        Super.Material3dDestroyed(e);
+
+        e.damageSector.MoveFloor(1, 1024, 0, 1, false, true);
+        e.damageSector.MoveCeiling(1, -1024, 0, 1, false);
     }
 }
