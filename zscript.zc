@@ -46,8 +46,7 @@ class MaterialHandler : EventHandler
         if (HasMaterialLine(e.damageLine))
         {
             MaterialLineDamaged(e);
-
-            if (e.damageLine.health - e.newDamage <= 0) MaterialLineDestroyed(e);
+            if (e.damageLine.GetHealth() - e.newDamage <= 0) MaterialLineDestroyed(e);
         }
     }
 
@@ -56,19 +55,16 @@ class MaterialHandler : EventHandler
         if (e.damageSectorPart == SECPART_Floor && HasMaterialFloor(e.damageSector))
         {
             MaterialFloorDamaged(e);
-
-            if (e.damageSector.healthFloor - e.newDamage <= 0) MaterialFloorDestroyed(e);
+            if (e.damageSector.GetHealth(SECPART_Floor) - e.newDamage <= 0) MaterialFloorDestroyed(e);
         }
         else if (e.damageSectorPart == SECPART_Ceiling && HasMaterialCeiling(e.damageSector))
         {
             MaterialCeilingDamaged(e);
-
-            if (e.damageSector.healthCeiling - e.newDamage <= 0) MaterialCeilingDestroyed(e);
+            if (e.damageSector.GetHealth(SECPART_Ceiling) - e.newDamage <= 0) MaterialCeilingDestroyed(e);
         }
         else if (e.damageSectorPart == SECPART_3d && HasMaterial3d(e.damageSector))
         {
             Material3dDamaged(e);
-
             if (e.damageSector.GetHealth(SECPART_3d) - e.newDamage <= 0) Material3dDestroyed(e);
         }
     }
@@ -77,17 +73,17 @@ class MaterialHandler : EventHandler
     {
         for (int i = 0; i < lines.Size(); ++i)
         {
-            if (lines[i].health > 0) MaterialLineTick(lines[i]);
+            if (lines[i].GetHealth() > 0) MaterialLineTick(lines[i]);
         }
 
         for (int i = 0; i < sectorsFloor.Size(); ++i)
         {
-            if (sectorsFloor[i].healthFloor > 0) MaterialFloorTick(sectorsFloor[i]);
+            if (sectorsFloor[i].GetHealth(SECPART_Floor) > 0) MaterialFloorTick(sectorsFloor[i]);
         }
 
         for (int i = 0; i < sectorsCeiling.Size(); ++i)
         {
-            if (sectorsCeiling[i].healthCeiling > 0) MaterialCeilingTick(sectorsCeiling[i]);
+            if (sectorsCeiling[i].GetHealth(SECPART_Ceiling) > 0) MaterialCeilingTick(sectorsCeiling[i]);
         }
 
         for (int i = 0; i < sectors3d.Size(); ++i)
@@ -127,7 +123,7 @@ class MaterialHandler : EventHandler
             e.damageType,
             e.damage,
             e.newDamage,
-            e.damageLine.health - e.newDamage);*/
+            e.damageLine.GetHealth() - e.newDamage);*/
     }
 
     virtual void MaterialLineDestroyed(WorldEvent e)
@@ -185,7 +181,7 @@ class MaterialHandler : EventHandler
             e.damageType,
             e.damage,
             e.newDamage,
-            e.damageSector.healthFloor - e.newDamage);*/
+            e.damageSector.GetHealth(SECPART_Floor) - e.newDamage);*/
     }
 
     virtual void MaterialFloorDestroyed(WorldEvent e)
@@ -230,7 +226,7 @@ class MaterialHandler : EventHandler
             e.damageType,
             e.damage,
             e.newDamage,
-            e.damageSector.healthCeiling - e.newDamage);*/
+            e.damageSector.GetHealth(SECPART_Ceiling) - e.newDamage);*/
     }
 
     virtual void MaterialCeilingDestroyed(WorldEvent e)
@@ -291,65 +287,75 @@ class MaterialHandler : EventHandler
 
     bool HasMaterialLine(Line l)
     {
-        // UDMF property
-        if (l.GetUdmfString('user_material') ~== materialName && materialName != "") return true;
-
-        // Front mid texture
-        String tex = TexMan.GetName(l.sidedef[0].GetTexture(Side.mid));
-        for (int i = 0; i < textures.Size(); ++i)
-        {
-            if (textures[i] ~== tex) return true;
+        if (l.GetUdmfString('user_material'))
+        {   // UDMF property
+            return l.GetUdmfString('user_material') ~== materialName;
         }
-
-        // Back mid texture
-        if (l.flags & Line.ML_TwoSided)
-        {
-            tex = TexMan.GetName(l.sidedef[1].GetTexture(Side.mid));
-            for (int i = 0; i < textures.Size(); ++i)
+        else
+        {   // Mid textures
+            TextureId frontMidTex = l.sidedef[0].GetTexture(Side.mid);
+            if (l.flags & Line.ML_TwoSided)
             {
-                if (textures[i] ~== tex) return true;
+                TextureId backMidTex = l.sidedef[1].GetTexture(Side.mid);
+                return IsMaterialTexture(frontMidTex) && IsMaterialTexture(backMidTex);
+            }
+            else
+            {
+                return IsMaterialTexture(frontMidTex);
             }
         }
-
-        return false;
     }
 
     bool HasMaterialFloor(Sector s)
     {
-        // UDMF property
-        if (s.GetUdmfString('user_materialfloor') ~== materialName && materialName != "") return true;
-
-        // Floor flat
-        String tex = TexMan.GetName(s.GetTexture(Sector.floor));
-        for (int i = 0; i < textures.Size(); ++i)
-        {
-            if (textures[i] ~== tex) return true;
+        if (s.GetUdmfString('user_materialfloor'))
+        {   // UDMF property
+            return s.GetUdmfString('user_materialfloor') ~== materialName;
         }
-
-        return false;
+        else
+        {   // Floor flat
+            return IsMaterialTexture(s.GetTexture(Sector.floor));
+        }
     }
 
     bool HasMaterialCeiling(Sector s)
     {
-        // UDMF property
-        if (s.GetUdmfString('user_materialceiling') ~== materialName && materialName != "") return true;
-
-        // Ceiling flat
-        String tex = TexMan.GetName(s.GetTexture(Sector.ceiling));
-        for (int i = 0; i < textures.Size(); ++i)
-        {
-            if (textures[i] ~== tex) return true;
+        if (s.GetUdmfString('user_materialceiling'))
+        {   // UDMF property
+            return s.GetUdmfString('user_materialceiling') ~== materialName;
         }
-
-        return false;
+        else
+        {   // Ceiling flat
+            return IsMaterialTexture(s.GetTexture(Sector.ceiling));
+        }
     }
 
     bool HasMaterial3d(Sector s)
     {
-        // UDMF property
-        if (s.GetUdmfString('user_material3d') ~== materialName && materialName != "") return true;
+        if (s.GetUdmfString('user_material3d'))
+        {   // UDMF property
+            return s.GetUdmfString('user_material3d') ~== materialName;
+        }
+        else
+        {   // Textures & flats
+            for (int i = 0; i < s.lines.Size(); ++i)
+            {
+                Line l = s.lines[i];
+                TextureId frontMidTex = l.sidedef[0].GetTexture(Side.mid);
+                if (!IsMaterialTexture(frontMidTex)) return false;
+            }
 
-        // TODO textures
+            return IsMaterialTexture(s.GetTexture(Sector.floor)) && IsMaterialTexture(s.GetTexture(Sector.ceiling));
+        }
+    }
+
+    bool IsMaterialTexture(TextureId tex)
+    {
+        String texName = TexMan.GetName(tex);
+        for (int i = 0; i < textures.Size(); ++i)
+        {
+            if (textures[i] ~== texName) return true;
+        }
 
         return false;
     }
@@ -391,14 +397,14 @@ class ForceFieldHandler : MaterialHandler
 
     override void MaterialLineTick(Line l)
     {
-        if (gameTic % 4 == 0 && l.health < health)
+        if (gameTic % 4 == 0 && l.GetHealth() < health)
         {
-            l.SetHealth(l.health + 1);
+            l.SetHealth(l.GetHealth() + 1);
 
-            Console.Printf("Force field HP: %d", l.health);
+            //Console.Printf("Force field HP: %d", l.GetHealth());
         }
 
-        l.alpha = Clamp(double(l.health) / health, 0, 1);
+        l.alpha = Clamp(double(l.GetHealth()) / health, 0, 1);
     }
 }
 
@@ -417,7 +423,7 @@ class DirtHandler : MaterialHandler
     {
         e.damageSector.SetTexture(Sector.Floor, TexMan.CheckForTexture("FLAT10", TexMan.TYPE_Any));
 
-        int excess = e.newDamage - e.damageSector.healthFloor;
+        int excess = e.newDamage - e.damageSector.GetHealth(SECPART_Floor);
         e.damageSector.SetHealth(SECPART_Floor, health);
         e.newDamage = excess % health;
 
@@ -473,6 +479,8 @@ class WoodHandler : MaterialHandler
     override void OnRegister()
     {
         materialName = "Wood";
+        textures.Push("FLAT5_2");
+        textures.Push("WOOD12");
         health = 50;
     }
 
