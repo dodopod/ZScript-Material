@@ -2,11 +2,10 @@ version "3.7"
 
 class MaterialHandler : EventHandler
 {
-    const set3dFloorSpecial = 160;
-    const lineMaterialProp = "user_material";
-    const floorMaterialProp = "user_materialfloor";
-    const ceilingMaterialProp = "user_materialceiling";
-    const floor3dMaterialProp = "user_material3d";
+    const MaterialLineProp = "user_material";
+    const MaterialFloorProp = "user_materialfloor";
+    const MaterialCeilingProp = "user_materialceiling";
+    const Material3dProp = "user_material3d";
 
     String materialName;
     Array<String> textures; // Array<TextureId> doesn't work
@@ -287,9 +286,9 @@ class MaterialHandler : EventHandler
 
     bool HasMaterialLine(Line l)
     {
-        if (l.GetUdmfString('user_material'))
+        if (l.GetUdmfString(materialLineProp))
         {   // UDMF property
-            return l.GetUdmfString('user_material') ~== materialName;
+            return l.GetUdmfString(materialLineProp) ~== materialName;
         }
         else
         {   // Mid textures
@@ -308,9 +307,9 @@ class MaterialHandler : EventHandler
 
     bool HasMaterialFloor(Sector s)
     {
-        if (s.GetUdmfString('user_materialfloor'))
+        if (s.GetUdmfString(materialFloorProp))
         {   // UDMF property
-            return s.GetUdmfString('user_materialfloor') ~== materialName;
+            return s.GetUdmfString(materialFloorProp) ~== materialName;
         }
         else
         {   // Floor flat
@@ -320,9 +319,9 @@ class MaterialHandler : EventHandler
 
     bool HasMaterialCeiling(Sector s)
     {
-        if (s.GetUdmfString('user_materialceiling'))
+        if (s.GetUdmfString(materialCeilingProp))
         {   // UDMF property
-            return s.GetUdmfString('user_materialceiling') ~== materialName;
+            return s.GetUdmfString(materialCeilingProp) ~== materialName;
         }
         else
         {   // Ceiling flat
@@ -332,9 +331,9 @@ class MaterialHandler : EventHandler
 
     bool HasMaterial3d(Sector s)
     {
-        if (s.GetUdmfString('user_material3d'))
+        if (s.GetUdmfString(material3dProp))
         {   // UDMF property
-            return s.GetUdmfString('user_material3d') ~== materialName;
+            return s.GetUdmfString(material3dProp) ~== materialName;
         }
         else
         {   // Textures & flats
