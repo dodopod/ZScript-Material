@@ -1,24 +1,30 @@
+// Handles events for level geometry composed of a particular material
 class MaterialHandler : EventHandler version("3.7")
 {
+    // Custom UDMF properties
     const MaterialLineProp = "user_material";
     const MaterialFloorProp = "user_materialfloor";
     const MaterialCeilingProp = "user_materialceiling";
     const Material3dProp = "user_material3d";
 
-    String materialName;
-    Array<String> textures; // Array<TextureId> doesn't work
+    String materialName;        // Name of material (matched against UDMF properties)
+    Array<String> textures;     // Textures associated w/ material
 
-    int health;
+    int health;                 // Initial health for geometry of this material
 
+    // Table of damage factors
+    // Damage to geometry is multiplied by damage factor for its type before being applied to geometry
     Array<String> damageTypes;
     Array<double> damageFactors;
 
+    // Lists of all level geometry w/ this material
     Array<Line> lines;
     Array<Sector> sectorsFloor;
     Array<Sector> sectorsCeiling;
     Array<Sector> sectors3d;
 
 
+    // Dispatches line/sector material initialization events
     override void WorldLoaded(WorldEvent e)
     {
         if (e.isReopen) return;
@@ -38,34 +44,40 @@ class MaterialHandler : EventHandler version("3.7")
         }
     }
 
+    // Dispatches line damage/destruction events
     override void WorldLineDamaged(WorldEvent e)
     {
-        if (HasMaterialLine(e.damageLine))
+        if (lines.Find(e.damageLine) < lines.Size())
         {
             MaterialLineDamaged(e);
             if (e.damageLine.GetHealth() - e.newDamage <= 0) MaterialLineDestroyed(e);
         }
     }
 
+    // Dispatches sector damage/destruction events
     override void WorldSectorDamaged(WorldEvent e)
     {
-        if (e.damageSectorPart == SECPART_Floor && HasMaterialFloor(e.damageSector))
+        if (e.damageSectorPart == SECPART_Floor
+            && sectorsFloor.Find(e.damageSector) < sectorsFloor.Size())
         {
             MaterialFloorDamaged(e);
             if (e.damageSector.GetHealth(SECPART_Floor) - e.newDamage <= 0) MaterialFloorDestroyed(e);
         }
-        else if (e.damageSectorPart == SECPART_Ceiling && HasMaterialCeiling(e.damageSector))
+        else if (e.damageSectorPart == SECPART_Ceiling
+            && sectorsCeiling.Find(e.damageSector) < sectorsCeiling.Size())
         {
             MaterialCeilingDamaged(e);
             if (e.damageSector.GetHealth(SECPART_Ceiling) - e.newDamage <= 0) MaterialCeilingDestroyed(e);
         }
-        else if (e.damageSectorPart == SECPART_3d && HasMaterial3d(e.damageSector))
+        else if (e.damageSectorPart == SECPART_3d
+            && sectors3d.Find(e.damageSector) < sectors3d.Size())
         {
             Material3dDamaged(e);
             if (e.damageSector.GetHealth(SECPART_3d) - e.newDamage <= 0) Material3dDestroyed(e);
         }
     }
 
+    // Dispatches material tick events
     override void WorldTick()
     {
         for (int i = 0; i < lines.Size(); ++i)
@@ -90,10 +102,12 @@ class MaterialHandler : EventHandler version("3.7")
     }
 
 
+    // Called when a line w/ this material is initialized
+    // Override if you want to do more than set health
     virtual void MaterialLineInit(Line l)
     {
         lines.Push(l);
-        l.SetHealth(health);
+        if (l.GetHealth() == 0) l.SetHealth(health);
 
         /*Console.Printf(
             "Line material assigned\n"
@@ -103,6 +117,8 @@ class MaterialHandler : EventHandler version("3.7")
             materialName);*/
     }
 
+    // Called when a line w/ this material is damaged
+    // Override if you want to do more than handle damage types
     virtual void MaterialLineDamaged(WorldEvent e)
     {
         e.newDamage = ApplyDamageFactor(e.damageType, e.damage);
@@ -123,6 +139,8 @@ class MaterialHandler : EventHandler version("3.7")
             e.damageLine.GetHealth() - e.newDamage);*/
     }
 
+    // Called when a line w/ this material is destroyed
+    // Override if you want to do more than make line non-blocking
     virtual void MaterialLineDestroyed(WorldEvent e)
     {
         if (e.damageLine.flags & Line.ML_TwoSided)
@@ -145,13 +163,16 @@ class MaterialHandler : EventHandler version("3.7")
         }
     }
 
+    // Called every tick for each line w/ this material
     virtual void MaterialLineTick(Line l) {}
 
 
+    // Called when a floor w/ this material is initialized
+    // Override if you want to do more than set health
     virtual void MaterialFloorInit(Sector s)
     {
         sectorsFloor.Push(s);
-        s.SetHealth(SECPART_Floor, health);
+        if (s.GetHealth(SECPART_Floor) == 0) s.SetHealth(SECPART_Floor, health);
 
         /*Console.Printf(
             "Floor material assigned\n"
@@ -161,6 +182,8 @@ class MaterialHandler : EventHandler version("3.7")
             materialName);*/
     }
 
+    // Called when a floor w/ this material is damaged
+    // Override if you want to do more than handle damage types
     virtual void MaterialFloorDamaged(WorldEvent e)
     {
         e.newDamage = ApplyDamageFactor(e.damageType, e.damage);
@@ -181,6 +204,7 @@ class MaterialHandler : EventHandler version("3.7")
             e.damageSector.GetHealth(SECPART_Floor) - e.newDamage);*/
     }
 
+    // Called when a floor w/ this material is destroyed
     virtual void MaterialFloorDestroyed(WorldEvent e)
     {
         /*Console.Printf(
@@ -189,13 +213,16 @@ class MaterialHandler : EventHandler version("3.7")
             e.damageSector.Index());*/
     }
 
+    // Called every tick for each floor w/ this material
     virtual void MaterialFloorTick(Sector s) {}
 
 
+    // Called when a ceiling w/ this material is initialized
+    // Override if you want to do more than set health
     virtual void MaterialCeilingInit(Sector s)
     {
         sectorsCeiling.Push(s);
-        s.SetHealth(SECPART_Ceiling, health);
+        if (s.GetHealth(SECPART_Ceiling) == 0) s.SetHealth(SECPART_Ceiling, health);
 
         /*Console.Printf(
             "Ceiling material assigned\n"
@@ -205,9 +232,10 @@ class MaterialHandler : EventHandler version("3.7")
             materialName);*/
     }
 
+    // Called when a ceiling w/ this material is damaged
+    // Override if you want to do more than handle damage types
     virtual void MaterialCeilingDamaged(WorldEvent e)
     {
-
         e.newDamage = ApplyDamageFactor(e.damageType, e.damage);
 
         /*Console.Printf(
@@ -226,6 +254,7 @@ class MaterialHandler : EventHandler version("3.7")
             e.damageSector.GetHealth(SECPART_Ceiling) - e.newDamage);*/
     }
 
+    // Called when a ceiling w/ this material is destroyed
     virtual void MaterialCeilingDestroyed(WorldEvent e)
     {
         /*Console.Printf(
@@ -234,25 +263,31 @@ class MaterialHandler : EventHandler version("3.7")
             e.damageSector.Index());*/
     }
 
+    // Called when a ceiling w/ this material is initialized
     virtual void MaterialCeilingTick(Sector s) {}
 
 
+    // Called when a 3D floor w/ this material is initialized
+    // Override if you want to do more than set health
     virtual void Material3dInit(Sector s)
     {
         sectors3d.Push(s);
-        s.SetHealth(SECPART_3d, health);
+        if (s.GetHealth(SECPART_3d) == 0) s.SetHealth(SECPART_3d, health);
 
         /*Console.Printf(
             "3d floor material assigned\n"
             "  Sector #: %d\n"
-            "  Material: %s",
+            "  Material: %s\n"
+            "  Health: %d",
             s.Index(),
-            materialName);*/
+            materialName,
+            s.GetHealth(SECPART_3d));*/
     }
 
+    // Called when a 3D floor w/ this material is damaged
+    // Override if you want to do more than handle damage factors
     virtual void Material3dDamaged(WorldEvent e)
     {
-
         e.newDamage = ApplyDamageFactor(e.damageType, e.damage);
 
         /*Console.Printf(
@@ -271,6 +306,7 @@ class MaterialHandler : EventHandler version("3.7")
             e.damageSector.GetHealth(SECPART_3d) - e.newDamage);*/
     }
 
+    // Called when a 3D floor w/ this material is destroyed
     virtual void Material3dDestroyed(WorldEvent e)
     {
         /*Console.Printf(
@@ -279,9 +315,11 @@ class MaterialHandler : EventHandler version("3.7")
             e.damageSector.Index());*/
     }
 
+    // Called every tick for each 3d floor w/ this material
     virtual void Material3dTick(Sector s) {}
 
 
+    // Returns true if line has this material
     bool HasMaterialLine(Line l)
     {
         if (l.GetUdmfString(materialLineProp))
@@ -303,6 +341,7 @@ class MaterialHandler : EventHandler version("3.7")
         }
     }
 
+    // Returns true if floor has this material
     bool HasMaterialFloor(Sector s)
     {
         if (s.GetUdmfString(materialFloorProp))
@@ -315,6 +354,7 @@ class MaterialHandler : EventHandler version("3.7")
         }
     }
 
+    // Returns true if ceiling has this material
     bool HasMaterialCeiling(Sector s)
     {
         if (s.GetUdmfString(materialCeilingProp))
@@ -327,6 +367,7 @@ class MaterialHandler : EventHandler version("3.7")
         }
     }
 
+    // Returns true if 3D floor has this material
     bool HasMaterial3d(Sector s)
     {
         if (s.GetUdmfString(material3dProp))
@@ -346,6 +387,7 @@ class MaterialHandler : EventHandler version("3.7")
         }
     }
 
+    // Returns true if texture represents this material
     bool IsMaterialTexture(TextureId tex)
     {
         String texName = TexMan.GetName(tex);
@@ -358,6 +400,7 @@ class MaterialHandler : EventHandler version("3.7")
     }
 
 
+    // Sets damage factor for given damage type
     void SetDamageFactor(String type, double factor)
     {
         for (int i = 0; i < damageTypes.Size(); ++i)
@@ -373,6 +416,7 @@ class MaterialHandler : EventHandler version("3.7")
         damageFactors.Push(factor);
     }
 
+    // Returns damage multiplied by appropriate damage factor
     int ApplyDamageFactor(String type, int damage)
     {
         for (int i = 0; i < damageTypes.Size(); ++i)
