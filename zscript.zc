@@ -1,0 +1,62 @@
+version "3.7"
+
+#include "zscript/material_handler.zc"
+
+class ForceFieldHandler : MaterialHandler
+{
+    override void OnRegister()
+    {
+        health = 100;
+        textures.Push("FIREBLU1");
+    }
+
+    override void MaterialLineTick(Line l)
+    {
+        l.alpha = double(l.GetHealth()) / health;
+    }
+
+    override void MaterialLineDestroyed(WorldEvent e)
+    {
+        Super.MaterialLineDestroyed(e);
+        e.damageLine.alpha = 0;
+    }
+}
+
+class WoodHandler : MaterialHandler
+{
+    override void OnRegister()
+    {
+        health = 10;
+        textures.Push("FLAT5_2");
+        textures.Push("WOOD1");
+    }
+
+    override void Material3dDestroyed(WorldEvent e)
+    {
+        Super.Material3dDestroyed(e);
+        e.damageSector.MoveFloor(1, 1024, 0, 1, false, true);
+        e.damageSector.MoveCeiling(1, -1024, 0, 1, false);
+    }
+}
+
+class DirtHandler : MaterialHandler
+{
+    override void OnRegister()
+    {
+        health = 10;
+        textures.Push("FLAT10");
+    }
+
+    override void MaterialFloorDestroyed(WorldEvent e)
+    {
+        Super.MaterialFloorDestroyed(e);
+
+        // Dig
+        int newHeight = e.damageSector.floorPlane.ZAtPoint(e.damageSector.centerSpot) - 32;
+        e.damageSector.MoveFloor(1, -newHeight, 0, 1, false, true);
+
+        // Reset health so we can dig some more
+        e.newDamage = (e.newDamage - e.damageSector.GetHealth(SECPART_Floor)) % health;
+        e.damageSector.SetHealth(SECPART_Floor, health);
+    }
+}
