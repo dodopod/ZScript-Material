@@ -8,6 +8,7 @@ class ForceFieldHandler : MaterialHandler
     {
         health = 100;
         textures.Push("FIREBLU1");
+        SetDamageFactor("Hitscan", 0);
     }
 
     override void MaterialLineTick(Line l)
@@ -26,7 +27,7 @@ class WoodHandler : MaterialHandler
 {
     override void OnRegister()
     {
-        health = 10;
+        health = 80;
         textures.Push("FLAT5_2");
         textures.Push("WOOD1");
     }
@@ -43,7 +44,7 @@ class DirtHandler : MaterialHandler
 {
     override void OnRegister()
     {
-        health = 10;
+        health = 20;
         textures.Push("FLAT10");
     }
 
