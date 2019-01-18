@@ -46,6 +46,7 @@ class DirtHandler : MaterialHandler
     {
         health = 20;
         textures.Push("FLAT10");
+        textures.Push("GRASS1");
     }
 
     override void MaterialFloorDestroyed(WorldEvent e)
@@ -55,6 +56,9 @@ class DirtHandler : MaterialHandler
         // Dig
         int newHeight = e.damageSector.floorPlane.ZAtPoint(e.damageSector.centerSpot) - 32;
         e.damageSector.MoveFloor(1, -newHeight, 0, 1, false, true);
+
+        // Mow the lawn
+        e.damageSector.SetTexture(Sector.floor, TexMan.CheckForTexture("FLAT10", TexMan.Type_Flat));
 
         // Reset health so we can dig some more
         e.newDamage = (e.newDamage - e.damageSector.GetHealth(SECPART_Floor)) % health;
