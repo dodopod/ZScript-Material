@@ -6,13 +6,14 @@ class ForceFieldHandler : MaterialHandler
 {
     override void OnRegister()
     {
-        health = 100;
+        health = 200;
         textures.Push("FIREBLU1");
         SetDamageFactor("Hitscan", 0);
     }
 
     override void MaterialLineTick(Line l)
     {
+        l.SetHealth(Min(health, l.GetHealth() + 1));
         l.alpha = double(l.GetHealth()) / health;
     }
 
