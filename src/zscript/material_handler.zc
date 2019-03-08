@@ -424,6 +424,11 @@ class MaterialHandler : EventHandler version("3.7")
             if (damageTypes[i] ~== type) return damageFactors[i] * damage;
         }
 
+        for (int i = 0; i < damageTypes.Size(); ++i)
+        {
+            if (damageTypes[i] ~== "") return damageFactors[i] * damage;
+        }
+
         return damage;
     }
 }
