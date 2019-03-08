@@ -92,3 +92,5 @@ override void OnRegister()
     SetDamageFactor("Hitscan", 0);
 }
 ```
+
+These are a few of the things that are possible with material handlers. There are more examples in the demo, or you can peruse the source code.
