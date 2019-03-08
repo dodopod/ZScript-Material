@@ -156,6 +156,11 @@ class MaterialHandler : EventHandler version("3.7")
                 | Line.ML_BlockHitscan
                 | Line.ML_3dMidTex_Impass);
 
+            let oldActivation = e.damageLine.activation;
+            e.damageLine.activation = SPAC_Impact;
+            e.damageLine.Activate(e.damageSource, e.damageLineSide, SPAC_Impact);
+            e.damageLine.activation = oldActivation;
+
             /*Console.Printf(
                 "Line destroyed\n"
                 "  Line #: %d",
