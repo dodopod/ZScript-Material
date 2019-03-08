@@ -331,7 +331,16 @@ class MaterialHandler : EventHandler version("3.7")
         {   // UDMF property
             return l.GetUdmfString(materialLineProp) ~== materialName;
         }
-        else
+        else if (IsLineDoor(l))
+        {
+            // Upper textures
+            if (l.flags & Line.ML_TwoSided)
+            {
+                TextureId frontTopTex = l.sidedef[0].GetTexture(Side.top);
+                TextureId backTopTex = l.sidedef[1].GetTexture(Side.top);
+                return IsMaterialTexture(frontTopTex) || IsMaterialTexture(backTopTex);
+            }
+        }
         {   // Mid textures
             TextureId frontMidTex = l.sidedef[0].GetTexture(Side.mid);
             if (l.flags & Line.ML_TwoSided)
@@ -402,6 +411,12 @@ class MaterialHandler : EventHandler version("3.7")
         }
 
         return false;
+    }
+
+    // Returns true if line is a door
+    bool IsLineDoor(Line l)
+    {
+        return l.special >= 10 && l.special < 15 || l.special == 202 || l.special == 249;
     }
 
 
