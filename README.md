@@ -1,6 +1,6 @@
 # ZScript Material #
 
-This script makes it easier to use GZDoom's new (v3.7) destructible geometry feature. It does this by assigning *materials* to lines, floors, ceilings and 3D floors based on texture (though they can also be set manually). Materials, like actors, have Health and DamageFactor properties, allowing level geometry to have strengths and weaknesses to different damage types. They also have events, allowing you to customize their behavior when they're damaged or destroyed.
+This script makes it easier to use GZDoom's new (v3.7) destructible geometry feature. It does this by providing an event handler, which assigns *materials* to lines, floors, ceilings and 3D floors based on texture (though they can also be assigned manually). Materials, like actors, have Health and DamageFactor properties, allowing level geometry to have strengths and weaknesses to different damage types. The event handler also defines several new events, allowing you to customize a material's behavior when it's damaged or destroyed.
 
 ## Tutorial ##
 
