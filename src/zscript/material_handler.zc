@@ -7,10 +7,13 @@ class MaterialHandler : EventHandler version("3.7")
     const MaterialCeilingProp = "user_materialceiling";
     const Material3dProp = "user_material3d";
 
-    String materialName;        // Name of material (matched against UDMF properties)
-    Array<String> textures;     // Textures associated w/ material
+    String materialName;                // Name of material (matched against UDMF properties)
+    Array<String> textures;             // Textures associated w/ material
+    TextureId destroyedLineTexture;     // Textures geometry is set to when destroyed
+    TextureId destroyedFloorTexture;
+    TextureId destroyedCeilingTexture;
 
-    int health;                 // Initial health for geometry of this material
+    int health;                         // Initial health for geometry of this material
 
     // Table of damage factors
     // Damage to geometry is multiplied by damage factor for its type before being applied to geometry
@@ -161,6 +164,16 @@ class MaterialHandler : EventHandler version("3.7")
             e.damageLine.Activate(e.damageSource, e.damageLineSide, SPAC_Impact);
             e.damageLine.activation = oldActivation;
 
+            if (destroyedLineTexture)
+            {
+                e.damageLine.sidedef[0].SetTexture(Side.mid, destroyedLineTexture);
+                e.damageLine.sidedef[1].SetTexture(Side.mid, destroyedLineTexture);
+            }
+            else
+            {
+                e.damageLine.alpha = 0;
+            }
+
             /*Console.Printf(
                 "Line destroyed\n"
                 "  Line #: %d",
@@ -212,6 +225,11 @@ class MaterialHandler : EventHandler version("3.7")
     // Called when a floor w/ this material is destroyed
     virtual void MaterialFloorDestroyed(WorldEvent e)
     {
+        if (destroyedFloorTexture)
+        {
+            e.damageSector.SetTexture(Sector.floor, destroyedFloorTexture);
+        }
+
         /*Console.Printf(
             "Floor destroyed\n"
             "  Sector #: %d",
@@ -262,6 +280,11 @@ class MaterialHandler : EventHandler version("3.7")
     // Called when a ceiling w/ this material is destroyed
     virtual void MaterialCeilingDestroyed(WorldEvent e)
     {
+        if (destroyedCeilingTexture)
+        {
+            e.damageSector.SetTexture(Sector.ceiling, destroyedCeilingTexture);
+        }
+
         /*Console.Printf(
             "Ceiling destroyed\n"
             "  Sector #: %d",
@@ -314,6 +337,9 @@ class MaterialHandler : EventHandler version("3.7")
     // Called when a 3D floor w/ this material is destroyed
     virtual void Material3dDestroyed(WorldEvent e)
     {
+        e.damageSector.MoveFloor(1, 4092, 0, 1, false, true);
+        e.damageSector.MoveCeiling(1, -4092, 0, 1, false);
+
         /*Console.Printf(
             "3d floor destroyed\n"
             "  Sector #: %d",
