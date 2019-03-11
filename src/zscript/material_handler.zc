@@ -112,12 +112,12 @@ class MaterialHandler : EventHandler version("3.7")
         lines.Push(l);
         if (l.GetHealth() == 0) l.SetHealth(health);
 
-        /*Console.Printf(
+        Console.Printf(
             "Line material assigned\n"
             "  Line #: %d\n"
             "  Material: %s",
             l.Index(),
-            materialName);*/
+            materialName);
     }
 
     // Called when a line w/ this material is damaged
@@ -126,7 +126,7 @@ class MaterialHandler : EventHandler version("3.7")
     {
         e.newDamage = ApplyDamageFactor(e.damageType, e.damage);
 
-        /*Console.Printf(
+        Console.Printf(
             "Line damaged\n"
             "  Line #: %d\n"
             "  Material: %s\n"
@@ -139,7 +139,7 @@ class MaterialHandler : EventHandler version("3.7")
             e.damageType,
             e.damage,
             e.newDamage,
-            e.damageLine.GetHealth() - e.newDamage);*/
+            e.damageLine.GetHealth() - e.newDamage);
     }
 
     // Called when a line w/ this material is destroyed
@@ -159,11 +159,6 @@ class MaterialHandler : EventHandler version("3.7")
                 | Line.ML_BlockHitscan
                 | Line.ML_3dMidTex_Impass);
 
-            let oldActivation = e.damageLine.activation;
-            e.damageLine.activation = SPAC_Impact;
-            e.damageLine.Activate(e.damageSource, e.damageLineSide, SPAC_Impact);
-            e.damageLine.activation = oldActivation;
-
             if (destroyedLineTexture)
             {
                 e.damageLine.sidedef[0].SetTexture(Side.mid, destroyedLineTexture);
@@ -173,12 +168,21 @@ class MaterialHandler : EventHandler version("3.7")
             {
                 e.damageLine.alpha = 0;
             }
-
-            /*Console.Printf(
-                "Line destroyed\n"
-                "  Line #: %d",
-                e.damageLine.Index());*/
         }
+        else if (destroyedLineTexture)
+        {
+            e.damageLine.sidedef[0].SetTexture(Side.mid, destroyedLineTexture);
+        }
+
+        let oldActivation = e.damageLine.activation;
+        e.damageLine.activation = SPAC_Impact;
+        e.damageLine.Activate(e.damageSource, e.damageLineSide, SPAC_Impact);
+        e.damageLine.activation = oldActivation;
+
+        Console.Printf(
+            "Line destroyed\n"
+            "  Line #: %d",
+            e.damageLine.Index());
     }
 
     // Called every tick for each line w/ this material
@@ -366,7 +370,12 @@ class MaterialHandler : EventHandler version("3.7")
                 TextureId backTopTex = l.sidedef[1].GetTexture(Side.top);
                 return IsMaterialTexture(frontTopTex) || IsMaterialTexture(backTopTex);
             }
+            else
+            {
+                return false;
+            }
         }
+        else
         {   // Mid textures
             TextureId frontMidTex = l.sidedef[0].GetTexture(Side.mid);
             if (l.flags & Line.ML_TwoSided)
