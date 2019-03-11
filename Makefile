@@ -1,7 +1,7 @@
 sources=$(shell find src -type f)
 target=material.pk3
 
-test-sources=$(shell find src -type f)
+test-sources=$(shell find test -type f)
 test-target=test.pk3
 
 build/$(target): $(sources)
