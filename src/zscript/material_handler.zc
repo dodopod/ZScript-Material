@@ -471,6 +471,7 @@ class MaterialHandler : EventHandler version("3.7")
     // Returns damage multiplied by appropriate damage factor
     int ApplyDamageFactor(String type, int damage)
     {
+        type.ToLower();
         int i = damageTypes.Find(type);
         if (i == damageTypes.Size()) i = damageTypes.Find("");
 
