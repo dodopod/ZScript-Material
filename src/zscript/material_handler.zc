@@ -112,12 +112,12 @@ class MaterialHandler : EventHandler version("3.7")
         lines.Push(l);
         if (l.GetHealth() == 0) l.SetHealth(health);
 
-        Console.Printf(
+        /*Console.Printf(
             "Line material assigned\n"
             "  Line #: %d\n"
             "  Material: %s",
             l.Index(),
-            materialName);
+            materialName);*/
     }
 
     // Called when a line w/ this material is damaged
@@ -126,7 +126,7 @@ class MaterialHandler : EventHandler version("3.7")
     {
         e.newDamage = ApplyDamageFactor(e.damageType, e.damage);
 
-        Console.Printf(
+        /*Console.Printf(
             "Line damaged\n"
             "  Line #: %d\n"
             "  Material: %s\n"
@@ -139,7 +139,7 @@ class MaterialHandler : EventHandler version("3.7")
             e.damageType,
             e.damage,
             e.newDamage,
-            e.damageLine.GetHealth() - e.newDamage);
+            e.damageLine.GetHealth() - e.newDamage);*/
     }
 
     // Called when a line w/ this material is destroyed
@@ -179,10 +179,10 @@ class MaterialHandler : EventHandler version("3.7")
         e.damageLine.Activate(e.damageSource, e.damageLineSide, SPAC_Impact);
         e.damageLine.activation = oldActivation;
 
-        Console.Printf(
+        /*Console.Printf(
             "Line destroyed\n"
             "  Line #: %d",
-            e.damageLine.Index());
+            e.damageLine.Index());*/
     }
 
     // Called every tick for each line w/ this material
