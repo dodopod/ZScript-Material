@@ -27,6 +27,12 @@ class MaterialHandler : EventHandler version("3.7")
     Array<Sector> sectors3d;
 
 
+    override void OnRegister()
+    {
+        let man = MaterialManager(Find("MaterialManager"));
+        if (man) man.materials.Push(self);
+    }
+
     // Dispatches line/sector material initialization events
     override void WorldLoaded(WorldEvent e)
     {
