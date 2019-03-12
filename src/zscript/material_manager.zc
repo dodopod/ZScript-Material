@@ -1,0 +1,14 @@
+class MaterialManager : EventHandler
+{
+    Array<MaterialHandler> materials;
+
+    MaterialHandler GetFloorMaterial(Actor a)
+    {
+        for (int i = 0; i < materials.Size(); ++i)
+        {
+            if (materials[i].HasMaterialFloor(a.floorSector)) return materials[i];
+        }
+
+        return null;
+    }
+}
