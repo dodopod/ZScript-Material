@@ -440,6 +440,7 @@ class MaterialHandler : EventHandler version("3.7")
     bool IsMaterialTexture(TextureId tex)
     {
         String texName = TexMan.GetName(tex);
+        texname.ToLower();
 
         return textures.Find(texName) < textures.Size();
     }
@@ -448,6 +449,21 @@ class MaterialHandler : EventHandler version("3.7")
     bool IsLineDoor(Line l)
     {
         return l.special >= 10 && l.special < 15 || l.special == 202 || l.special == 249;
+    }
+
+
+    // Adds texture to set of textures that represent this material
+    void InsertTexture(String tex)
+    {
+        tex.ToLower();
+        if (textures.Find(tex) == textures.Size()) textures.Push(tex);
+    }
+
+    // Removes texture from set of textures that represent this material
+    void RemoveTexture(String tex)
+    {
+        tex.ToLower();
+        textures.Delete(textures.Find(tex));
     }
 
 
