@@ -451,6 +451,21 @@ class MaterialHandler : EventHandler version("3.7")
     }
 
 
+    // Adds texture to set of textures that represent this material
+    void InsertTexture(String tex)
+    {
+        tex.ToLower();
+        if (textures.Find(tex) == textures.Size()) textures.Push(tex);
+    }
+
+    // Removes texture from set of textures that represent this material
+    void RemoveTexture(String tex)
+    {
+        tex.ToLower();
+        textures.Delete(textures.Find(tex));
+    }
+
+
     // Sets damage factor for given damage type
     void SetDamageFactor(String type, double factor)
     {
