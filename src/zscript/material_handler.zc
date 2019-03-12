@@ -440,6 +440,7 @@ class MaterialHandler : EventHandler version("3.7")
     bool IsMaterialTexture(TextureId tex)
     {
         String texName = TexMan.GetName(tex);
+        texname.ToLower();
 
         return textures.Find(texName) < textures.Size();
     }
